@@ -1,9 +1,7 @@
 import * as vscode from "vscode";
 import { BundleTreeProvider } from "./views/bundle-tree";
-import {
-  createFetchBundleCommand,
-  createRefreshBundleCommand,
-} from "./commands/fetch-bundle";
+import { createRefreshBundleCommand } from "./commands/fetch-bundle";
+import { createPickBundleCommand } from "./commands/pick-bundle";
 import { createSubmitEvidenceCommand } from "./commands/submit-evidence";
 import { StatusBarController } from "./status-bar";
 
@@ -19,7 +17,7 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "orqestra.fetchBundle",
-      createFetchBundleCommand(tree, statusBar),
+      createPickBundleCommand(tree, statusBar),
     ),
     vscode.commands.registerCommand(
       "orqestra.refreshBundle",

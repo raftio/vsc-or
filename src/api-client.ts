@@ -67,6 +67,13 @@ export async function getBundles(
   );
 }
 
+export async function listBundles(
+  limit = 50,
+  offset = 0,
+): Promise<{ bundles: ExecutionBundle[]; total: number }> {
+  return request(`/v1/bundles?limit=${limit}&offset=${offset}`);
+}
+
 export async function getBundle(id: string): Promise<ExecutionBundle> {
   return request(`/v1/bundles/${encodeURIComponent(id)}`);
 }
