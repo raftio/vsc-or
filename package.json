@@ -1,0 +1,98 @@
+{
+  "name": "vsc-orqestra",
+  "displayName": "Orqestra",
+  "description": "Receive execution bundles and submit evidence from your IDE",
+  "version": "0.1.0",
+  "publisher": "raftio",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "orqestra",
+          "title": "Orqestra",
+          "icon": "$(symbol-structure)"
+        }
+      ]
+    },
+    "views": {
+      "orqestra": [
+        {
+          "id": "orqestra.bundleTree",
+          "name": "Execution Bundle"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "orqestra.fetchBundle",
+        "title": "Orqestra: Fetch Bundle",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "orqestra.submitEvidence",
+        "title": "Orqestra: Submit Evidence",
+        "icon": "$(beaker)"
+      },
+      {
+        "command": "orqestra.disconnect",
+        "title": "Orqestra: Disconnect"
+      },
+      {
+        "command": "orqestra.refreshBundle",
+        "title": "Refresh",
+        "icon": "$(refresh)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "orqestra.fetchBundle",
+          "when": "view == orqestra.bundleTree",
+          "group": "navigation"
+        },
+        {
+          "command": "orqestra.refreshBundle",
+          "when": "view == orqestra.bundleTree",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Orqestra",
+      "properties": {
+        "orqestra.apiUrl": {
+          "type": "string",
+          "default": "http://localhost:3001",
+          "description": "Base URL of the Orqestra API"
+        },
+        "orqestra.apiToken": {
+          "type": "string",
+          "default": "",
+          "description": "Bearer token for authenticating with the Orqestra API"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --sourcemap",
+    "watch": "npm run build -- --watch",
+    "package": "npm run build -- --minify",
+    "lint": "eslint src --ext .ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "esbuild": "^0.24.0",
+    "eslint": "^9.0.0",
+    "typescript": "^5.6.0"
+  }
+}
