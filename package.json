@@ -2,7 +2,7 @@
   "name": "vsc-orqestra",
   "displayName": "Orqestra",
   "description": "Receive execution bundles and submit evidence from your IDE",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "publisher": "raftio",
   "license": "MIT",
   "engines": {
@@ -50,10 +50,25 @@
         "command": "orqestra.refreshBundle",
         "title": "Refresh",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "orqestra.executeTask",
+        "title": "Orqestra: Execute Task",
+        "icon": "$(play)"
+      },
+      {
+        "command": "orqestra.executeBundle",
+        "title": "Orqestra: Execute Bundle",
+        "icon": "$(run-all)"
       }
     ],
     "menus": {
       "view/title": [
+        {
+          "command": "orqestra.executeBundle",
+          "when": "view == orqestra.bundleTree",
+          "group": "navigation"
+        },
         {
           "command": "orqestra.fetchBundle",
           "when": "view == orqestra.bundleTree",
@@ -63,6 +78,13 @@
           "command": "orqestra.refreshBundle",
           "when": "view == orqestra.bundleTree",
           "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "orqestra.executeTask",
+          "when": "view == orqestra.bundleTree && viewItem == task",
+          "group": "inline"
         }
       ]
     },

@@ -9,13 +9,14 @@ type NodeKind =
   | "excerpt"
   | "info";
 
-interface TreeNode {
+export interface TreeNode {
   kind: NodeKind;
   label: string;
   description?: string;
   tooltip?: string;
   children?: TreeNode[];
   collapsible?: boolean;
+  taskId?: string;
 }
 
 export class BundleTreeProvider
@@ -55,6 +56,10 @@ export class BundleTreeProvider
     return this.bundle;
   }
 
+  getContext(): SynthesizedContext | null {
+    return this.context;
+  }
+
   getTreeItem(element: TreeNode): vscode.TreeItem {
     const item = new vscode.TreeItem(
       element.label,
@@ -71,6 +76,14 @@ export class BundleTreeProvider
       item.tooltip = new vscode.MarkdownString(element.tooltip);
     }
     item.iconPath = this.iconFor(element.kind);
+    if (element.kind === "task" && element.taskId) {
+      item.contextValue = "task";
+      item.command = {
+        command: "orqestra.executeTask",
+        title: "Execute Task",
+        arguments: [element.taskId],
+      };
+    }
     return item;
   }
 
@@ -112,6 +125,7 @@ export class BundleTreeProvider
             label: t.title,
             description: desc,
             tooltip: t.description || undefined,
+            taskId: t.id,
           };
         }),
       });
