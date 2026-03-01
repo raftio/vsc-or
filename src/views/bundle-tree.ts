@@ -177,11 +177,14 @@ export class BundleTreeProvider
     }
 
     const ticketLabel = context?.ticket_title ?? bundle.ticket_ref;
+    const desc = context?.ticket_title
+      ? `${bundle.ticket_ref} · v${bundle.version} · ${bundle.tasks.length} task(s)`
+      : `v${bundle.version} · ${bundle.tasks.length} task(s)`;
 
     return {
       kind: "bundle",
       label: ticketLabel,
-      description: `v${bundle.version} · ${bundle.tasks.length} task(s)`,
+      description: desc,
       tooltip: context?.ticket_description || `Bundle ${bundle.id}`,
       bundleId: bundle.id,
       children,
