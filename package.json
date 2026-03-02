@@ -1,5 +1,5 @@
 {
-  "name": "vsc-orca",
+  "name": "vsc-or",
   "displayName": "OR",
   "description": "Receive execution bundles and submit evidence from your IDE",
   "version": "0.1.3",
