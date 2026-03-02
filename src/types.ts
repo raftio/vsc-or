@@ -9,6 +9,14 @@ export interface BundleDependency {
   dependsOn: string;
 }
 
+export interface CodeSearchResult {
+  file: string;
+  lines: string;
+  language: string | null;
+  score: number;
+  code: string;
+}
+
 export interface ExecutionBundle {
   id: string;
   version: number;
@@ -21,6 +29,11 @@ export interface ExecutionBundle {
   context?: {
     excerpts?: string[];
     related_ticket_ids?: string[];
+  };
+  meta?: {
+    code_search_results?: CodeSearchResult[];
+    doc_sections?: Array<{ id: string; title: string; body: string }>;
+    [key: string]: unknown;
   };
   created_at: string;
   updated_at: string;

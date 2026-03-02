@@ -1,11 +1,11 @@
 ---
-description: vsc-orca project context - VS Code extension for Orca
+description: vsc-orca project context - VS Code extension for OR
 alwaysApply: true
 ---
 
 # vsc-orca
 
-VS Code extension for the Orca ecosystem. Provides IDE integration for fetching execution bundles, submitting evidence, and running tasks.
+VS Code extension for the OR ecosystem. Provides IDE integration for fetching execution bundles, submitting evidence, and running tasks.
 
 ## Tech Stack
 
@@ -16,7 +16,7 @@ VS Code extension for the Orca ecosystem. Provides IDE integration for fetching 
 ## Structure
 
 - `src/extension.ts` — Activation, command/view registration
-- `src/api-client.ts` — Orca API client (fetch-based)
+- `src/api-client.ts` — OR API client (fetch-based)
 - `src/status-bar.ts` — Status bar controller
 - `src/prompt.ts` — Prompt handling
 - `src/types.ts` — Shared types
@@ -33,4 +33,4 @@ VS Code extension for the Orca ecosystem. Provides IDE integration for fetching 
 
 ## Parent Project
 
-Part of the Orca ecosystem. The main API lives in the `orca` monorepo.
+Part of the OR ecosystem. The main API lives in the `orca` monorepo.

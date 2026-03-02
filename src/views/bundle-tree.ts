@@ -107,7 +107,7 @@ export class BundleTreeProvider
         {
           kind: "info",
           label: "No bundles loaded",
-          description: "Use 'Orca: Fetch Bundle' to get started",
+          description: "Use 'OR: Fetch Bundle' to get started",
         },
       ];
     }

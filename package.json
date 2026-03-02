@@ -1,6 +1,6 @@
 {
   "name": "vsc-orca",
-  "displayName": "Orca",
+  "displayName": "OR",
   "description": "Receive execution bundles and submit evidence from your IDE",
   "version": "0.1.3",
   "publisher": "raftio",
@@ -12,101 +12,101 @@
     "Other"
   ],
   "activationEvents": [
-    "onView:orca.bundleTree"
+    "onView:or.bundleTree"
   ],
   "main": "./dist/extension.js",
   "contributes": {
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "orca",
-          "title": "Orca",
+          "id": "or",
+          "title": "OR",
           "icon": "$(symbol-structure)"
         }
       ]
     },
     "views": {
-      "orca": [
+      "or": [
         {
-          "id": "orca.bundleTree",
+          "id": "or.bundleTree",
           "name": "Execution Bundle"
         }
       ]
     },
     "commands": [
       {
-        "command": "orca.fetchBundle",
-        "title": "Orca: Fetch Bundle",
+        "command": "or.fetchBundle",
+        "title": "OR: Fetch Bundle",
         "icon": "$(cloud-download)"
       },
       {
-        "command": "orca.submitEvidence",
-        "title": "Orca: Submit Evidence",
+        "command": "or.submitEvidence",
+        "title": "OR: Submit Evidence",
         "icon": "$(beaker)"
       },
       {
-        "command": "orca.disconnect",
-        "title": "Orca: Disconnect"
+        "command": "or.disconnect",
+        "title": "OR: Disconnect"
       },
       {
-        "command": "orca.refreshBundle",
+        "command": "or.refreshBundle",
         "title": "Refresh",
         "icon": "$(refresh)"
       },
       {
-        "command": "orca.executeTask",
-        "title": "Orca: Execute Task",
+        "command": "or.executeTask",
+        "title": "OR: Execute Task",
         "icon": "$(play)"
       },
       {
-        "command": "orca.executeBundle",
-        "title": "Orca: Execute Bundle",
+        "command": "or.executeBundle",
+        "title": "OR: Execute Bundle",
         "icon": "$(run-all)"
       }
     ],
     "menus": {
       "view/title": [
         {
-          "command": "orca.executeBundle",
-          "when": "view == orca.bundleTree",
+          "command": "or.executeBundle",
+          "when": "view == or.bundleTree",
           "group": "navigation"
         },
         {
-          "command": "orca.fetchBundle",
-          "when": "view == orca.bundleTree",
+          "command": "or.fetchBundle",
+          "when": "view == or.bundleTree",
           "group": "navigation"
         },
         {
-          "command": "orca.refreshBundle",
-          "when": "view == orca.bundleTree",
+          "command": "or.refreshBundle",
+          "when": "view == or.bundleTree",
           "group": "navigation"
         }
       ],
       "view/item/context": [
         {
-          "command": "orca.executeBundle",
-          "when": "view == orca.bundleTree && viewItem == bundle",
+          "command": "or.executeBundle",
+          "when": "view == or.bundleTree && viewItem == bundle",
           "group": "inline"
         },
         {
-          "command": "orca.executeTask",
-          "when": "view == orca.bundleTree && viewItem == task",
+          "command": "or.executeTask",
+          "when": "view == or.bundleTree && viewItem == task",
           "group": "inline"
         }
       ]
     },
     "configuration": {
-      "title": "Orca",
+      "title": "OR",
       "properties": {
-        "orca.apiUrl": {
+        "or.apiUrl": {
           "type": "string",
           "default": "http://localhost:3001",
-          "description": "Base URL of the Orca API"
+          "description": "Base URL of the OR API"
         },
-        "orca.apiToken": {
+        "or.apiToken": {
           "type": "string",
           "default": "",
-          "description": "Bearer token for authenticating with the Orca API"
+          "description": "Bearer token for authenticating with the OR API"
         }
       }
     }
