@@ -11,7 +11,7 @@ import {
 import { reviewNewBundle } from "./commands/review-bundle";
 import { StatusBarController } from "./status-bar";
 
-const REVIEWED_KEY = "or.reviewedBundleIds";
+const REVIEWED_KEY = "orca.reviewedBundleIds";
 
 async function loadAllBundles(
   tree: BundleTreeProvider,
@@ -64,7 +64,7 @@ export function activate(context: vscode.ExtensionContext) {
   const statusBar = new StatusBarController();
 
   context.subscriptions.push(
-    vscode.window.registerTreeDataProvider("or.bundleTree", tree),
+    vscode.window.registerTreeDataProvider("orca.bundleTree", tree),
     statusBar,
   );
 
@@ -72,23 +72,23 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      "or.fetchBundle",
+      "orca.fetchBundle",
       createFetchBundleCommand(reload),
     ),
-    vscode.commands.registerCommand("or.refreshBundle", reload),
+    vscode.commands.registerCommand("orca.refreshBundle", reload),
     vscode.commands.registerCommand(
-      "or.submitEvidence",
+      "orca.submitEvidence",
       createSubmitEvidenceCommand(tree),
     ),
     vscode.commands.registerCommand(
-      "or.executeTask",
+      "orca.executeTask",
       createExecuteTaskCommand(tree),
     ),
     vscode.commands.registerCommand(
-      "or.executeBundle",
+      "orca.executeBundle",
       createExecuteBundleCommand(tree),
     ),
-    vscode.commands.registerCommand("or.disconnect", () => {
+    vscode.commands.registerCommand("orca.disconnect", () => {
       tree.clear();
       statusBar.reset();
       vscode.window.showInformationMessage("OR: disconnected.");
