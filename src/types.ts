@@ -67,6 +67,27 @@ export interface EvidencePayload {
   bundle_version?: number;
 }
 
+export interface Workspace {
+  id: string;
+  name: string;
+  slug: string;
+  owner_id: string;
+  role: string;
+  member_count: number;
+  created_at: string;
+}
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+}
+
+export interface LoginResponse {
+  token: string;
+  user: AuthUser;
+}
+
 export interface SynthesizedContext {
   ticket_id: string;
   ticket_title: string;

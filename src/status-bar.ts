@@ -8,7 +8,7 @@ export class StatusBarController {
       vscode.StatusBarAlignment.Left,
       50,
     );
-    this.item.command = "orca.fetchBundle";
+    this.item.command = "or.fetchBundle";
     this.reset();
     this.item.show();
   }

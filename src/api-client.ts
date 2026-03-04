@@ -1,22 +1,22 @@
 import * as vscode from "vscode";
+import * as auth from "./auth";
 import type {
   ExecutionBundle,
   EvidencePayload,
+  LoginResponse,
   SynthesizedContext,
+  Workspace,
 } from "./types";
 
-function getConfig() {
+function getApiUrl(): string {
   const cfg = vscode.workspace.getConfiguration("or");
-  return {
-    apiUrl: (cfg.get<string>("apiUrl") || "http://localhost:3001").replace(
-      /\/+$/,
-      "",
-    ),
-    apiToken: cfg.get<string>("apiToken") || "",
-  };
+  return (cfg.get<string>("apiUrl") || "http://localhost:3001").replace(
+    /\/+$/,
+    "",
+  );
 }
 
-function headers(token: string): Record<string, string> {
+function headers(token?: string): Record<string, string> {
   const h: Record<string, string> = { "Content-Type": "application/json" };
   if (token) {
     h["Authorization"] = `Bearer ${token}`;
@@ -26,13 +26,14 @@ function headers(token: string): Record<string, string> {
 
 async function request<T>(
   path: string,
-  init?: RequestInit,
+  init?: RequestInit & { token?: string },
 ): Promise<T> {
-  const { apiUrl, apiToken } = getConfig();
+  const apiUrl = getApiUrl();
+  const token = init?.token ?? (await auth.getToken());
   const url = `${apiUrl}${path}`;
   const res = await fetch(url, {
     ...init,
-    headers: { ...headers(apiToken), ...(init?.headers as Record<string, string>) },
+    headers: { ...headers(token), ...(init?.headers as Record<string, string>) },
   });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
@@ -41,15 +42,57 @@ async function request<T>(
   return res.json() as Promise<T>;
 }
 
+// ── Auth ──────────────────────────────────────────────────────────────────
+
+export async function loginApi(
+  email: string,
+  password: string,
+): Promise<LoginResponse> {
+  return request("/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+}
+
 export async function getHealth(): Promise<{ status: string }> {
   return request("/health");
 }
 
+// ── Workspaces ────────────────────────────────────────────────────────────
+
+export async function listWorkspaces(): Promise<{
+  workspaces: Workspace[];
+}> {
+  return request("/v1/workspaces");
+}
+
+// ── Bundles (workspace-scoped) ────────────────────────────────────────────
+
+export async function listBundles(
+  workspaceId: string,
+  limit = 50,
+  offset = 0,
+): Promise<{ bundles: ExecutionBundle[]; total: number }> {
+  return request(
+    `/v1/workspaces/${encodeURIComponent(workspaceId)}/bundles?limit=${limit}&offset=${offset}&status=active`,
+  );
+}
+
+export async function getBundle(
+  workspaceId: string,
+  id: string,
+): Promise<ExecutionBundle> {
+  return request(
+    `/v1/workspaces/${encodeURIComponent(workspaceId)}/bundles/${encodeURIComponent(id)}`,
+  );
+}
+
 export async function buildBundle(
+  workspaceId: string,
   ticketId: string,
   specRef?: string,
 ): Promise<ExecutionBundle> {
-  return request("/v1/bundles", {
+  return request(`/v1/workspaces/${encodeURIComponent(workspaceId)}/bundles`, {
     method: "POST",
     body: JSON.stringify({
       ticket_ref: ticketId,
@@ -59,24 +102,7 @@ export async function buildBundle(
   });
 }
 
-export async function getBundles(
-  ticketId: string,
-): Promise<{ bundles: ExecutionBundle[] }> {
-  return request(
-    `/v1/bundles?ticketId=${encodeURIComponent(ticketId)}`,
-  );
-}
-
-export async function listBundles(
-  limit = 50,
-  offset = 0,
-): Promise<{ bundles: ExecutionBundle[]; total: number }> {
-  return request(`/v1/bundles?limit=${limit}&offset=${offset}`);
-}
-
-export async function getBundle(id: string): Promise<ExecutionBundle> {
-  return request(`/v1/bundles/${encodeURIComponent(id)}`);
-}
+// ── Context ───────────────────────────────────────────────────────────────
 
 export async function getContext(
   ticketId: string,
@@ -87,6 +113,8 @@ export async function getContext(
     body: JSON.stringify({ ticket_id: ticketId, spec_ref: specRef }),
   });
 }
+
+// ── Evidence ──────────────────────────────────────────────────────────────
 
 export async function submitEvidence(
   payload: EvidencePayload,

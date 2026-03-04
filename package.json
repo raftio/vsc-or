@@ -2,7 +2,7 @@
   "name": "vsc-or",
   "displayName": "OR",
   "description": "Receive execution bundles and submit evidence from your IDE",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "publisher": "raftio",
   "license": "MIT",
   "engines": {
@@ -35,6 +35,16 @@
     },
     "commands": [
       {
+        "command": "or.login",
+        "title": "OR: Sign In",
+        "icon": "$(sign-in)"
+      },
+      {
+        "command": "or.logout",
+        "title": "OR: Sign Out",
+        "icon": "$(sign-out)"
+      },
+      {
         "command": "or.fetchBundle",
         "title": "OR: Fetch Bundle",
         "icon": "$(cloud-download)"
@@ -64,22 +74,29 @@
         "icon": "$(run-all)"
       }
     ],
+    "viewsWelcome": [
+      {
+        "view": "or.bundleTree",
+        "contents": "Sign in to OR to view your execution bundles.\n[Sign In](command:or.login)",
+        "when": "!or.loggedIn"
+      }
+    ],
     "menus": {
       "view/title": [
         {
-          "command": "or.executeBundle",
-          "when": "view == or.bundleTree",
-          "group": "navigation"
-        },
-        {
           "command": "or.fetchBundle",
-          "when": "view == or.bundleTree",
-          "group": "navigation"
+          "when": "view == or.bundleTree && or.loggedIn",
+          "group": "navigation@1"
         },
         {
           "command": "or.refreshBundle",
-          "when": "view == or.bundleTree",
-          "group": "navigation"
+          "when": "view == or.bundleTree && or.loggedIn",
+          "group": "navigation@2"
+        },
+        {
+          "command": "or.logout",
+          "when": "view == or.bundleTree && or.loggedIn",
+          "group": "navigation@3"
         }
       ],
       "view/item/context": [
@@ -102,11 +119,6 @@
           "type": "string",
           "default": "http://localhost:3001",
           "description": "Base URL of the OR API"
-        },
-        "or.apiToken": {
-          "type": "string",
-          "default": "",
-          "description": "Bearer token for authenticating with the OR API"
         }
       }
     }

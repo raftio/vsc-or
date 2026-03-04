@@ -1,7 +1,18 @@
 import * as vscode from "vscode";
-import type { ExecutionBundle, SynthesizedContext } from "../types";
+import type {
+  ExecutionBundle,
+  SynthesizedContext,
+  Workspace,
+} from "../types";
 
-type NodeKind = "bundle" | "section" | "task" | "ac" | "excerpt" | "info";
+type NodeKind =
+  | "workspace"
+  | "bundle"
+  | "section"
+  | "task"
+  | "ac"
+  | "excerpt"
+  | "info";
 
 export interface TreeNode {
   kind: NodeKind;
@@ -12,11 +23,17 @@ export interface TreeNode {
   collapsible?: boolean;
   bundleId?: string;
   taskId?: string;
+  workspaceId?: string;
 }
 
 export interface BundleEntry {
   bundle: ExecutionBundle;
   context: SynthesizedContext | null;
+}
+
+export interface WorkspaceEntry {
+  workspace: Workspace;
+  bundles: BundleEntry[];
 }
 
 export class BundleTreeProvider
@@ -27,51 +44,85 @@ export class BundleTreeProvider
   >();
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
-  private entries: BundleEntry[] = [];
+  private wsEntries: WorkspaceEntry[] = [];
   private roots: TreeNode[] = [];
 
   refresh(): void {
     this._onDidChangeTreeData.fire();
   }
 
-  setBundles(entries: BundleEntry[]): void {
-    this.entries = entries;
+  setWorkspaces(entries: WorkspaceEntry[]): void {
+    this.wsEntries = entries;
     this.roots = this.buildRoots();
     this.refresh();
   }
 
-  addBundle(bundle: ExecutionBundle, ctx: SynthesizedContext | null): void {
-    const idx = this.entries.findIndex((e) => e.bundle.id === bundle.id);
+  /** @deprecated use setWorkspaces */
+  setBundles(entries: BundleEntry[]): void {
+    this.wsEntries = [
+      {
+        workspace: {
+          id: "_legacy",
+          name: "Bundles",
+          slug: "bundles",
+          owner_id: "",
+          role: "member",
+          member_count: 0,
+          created_at: "",
+        },
+        bundles: entries,
+      },
+    ];
+    this.roots = this.buildRoots();
+    this.refresh();
+  }
+
+  addBundle(
+    workspaceId: string,
+    bundle: ExecutionBundle,
+    ctx: SynthesizedContext | null,
+  ): void {
+    const ws = this.wsEntries.find((e) => e.workspace.id === workspaceId);
+    if (!ws) return;
+    const idx = ws.bundles.findIndex((e) => e.bundle.id === bundle.id);
     if (idx >= 0) {
-      this.entries[idx] = { bundle, context: ctx };
+      ws.bundles[idx] = { bundle, context: ctx };
     } else {
-      this.entries.unshift({ bundle, context: ctx });
+      ws.bundles.unshift({ bundle, context: ctx });
     }
     this.roots = this.buildRoots();
     this.refresh();
   }
 
   clear(): void {
-    this.entries = [];
+    this.wsEntries = [];
     this.roots = [];
     this.refresh();
   }
 
   getBundle(bundleId: string): ExecutionBundle | null {
-    return this.entries.find((e) => e.bundle.id === bundleId)?.bundle ?? null;
+    for (const ws of this.wsEntries) {
+      const found = ws.bundles.find((e) => e.bundle.id === bundleId);
+      if (found) return found.bundle;
+    }
+    return null;
   }
 
   getBundleContext(bundleId: string): SynthesizedContext | null {
-    return this.entries.find((e) => e.bundle.id === bundleId)?.context ?? null;
+    for (const ws of this.wsEntries) {
+      const found = ws.bundles.find((e) => e.bundle.id === bundleId);
+      if (found) return found.context;
+    }
+    return null;
   }
 
   getAllEntries(): BundleEntry[] {
-    return this.entries;
+    return this.wsEntries.flatMap((ws) => ws.bundles);
   }
 
   getTreeItem(element: TreeNode): vscode.TreeItem {
     const state = element.children?.length
-      ? element.kind === "bundle"
+      ? element.kind === "workspace" || element.kind === "bundle"
         ? vscode.TreeItemCollapsibleState.Collapsed
         : vscode.TreeItemCollapsibleState.Expanded
       : vscode.TreeItemCollapsibleState.None;
@@ -87,7 +138,9 @@ export class BundleTreeProvider
 
     item.iconPath = this.iconFor(element.kind);
 
-    if (element.kind === "bundle") {
+    if (element.kind === "workspace") {
+      item.contextValue = "workspace";
+    } else if (element.kind === "bundle") {
       item.contextValue = "bundle";
     } else if (element.kind === "task" && element.taskId) {
       item.contextValue = "task";
@@ -102,17 +155,33 @@ export class BundleTreeProvider
   }
 
   private buildRoots(): TreeNode[] {
-    if (this.entries.length === 0) {
-      return [
-        {
-          kind: "info",
-          label: "No bundles loaded",
-          description: "Use 'OR: Fetch Bundle' to get started",
-        },
-      ];
+    if (this.wsEntries.length === 0) {
+      return [];
     }
 
-    return this.entries.map((entry) => this.buildBundleNode(entry));
+    return this.wsEntries.map((entry) => this.buildWorkspaceNode(entry));
+  }
+
+  private buildWorkspaceNode({ workspace, bundles }: WorkspaceEntry): TreeNode {
+    const bundleNodes =
+      bundles.length > 0
+        ? bundles.map((be) => this.buildBundleNode(be))
+        : [
+            {
+              kind: "info" as NodeKind,
+              label: "No bundles",
+              workspaceId: workspace.id,
+            },
+          ];
+
+    return {
+      kind: "workspace",
+      label: workspace.name,
+      description: `${bundles.length} bundle(s)`,
+      tooltip: `Workspace: ${workspace.name} (${workspace.slug})`,
+      workspaceId: workspace.id,
+      children: bundleNodes,
+    };
   }
 
   private buildBundleNode({ bundle, context }: BundleEntry): TreeNode {
@@ -194,6 +263,8 @@ export class BundleTreeProvider
 
   private iconFor(kind: NodeKind): vscode.ThemeIcon {
     switch (kind) {
+      case "workspace":
+        return new vscode.ThemeIcon("briefcase");
       case "bundle":
         return new vscode.ThemeIcon("package");
       case "section":

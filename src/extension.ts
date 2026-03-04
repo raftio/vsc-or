@@ -1,96 +1,135 @@
 import * as vscode from "vscode";
 import { BundleTreeProvider } from "./views/bundle-tree";
-import type { BundleEntry } from "./views/bundle-tree";
+import type { WorkspaceEntry, BundleEntry } from "./views/bundle-tree";
 import * as api from "./api-client";
+import * as auth from "./auth";
 import { createFetchBundleCommand } from "./commands/pick-bundle";
 import { createSubmitEvidenceCommand } from "./commands/submit-evidence";
 import {
   createExecuteTaskCommand,
   createExecuteBundleCommand,
 } from "./commands/execute-task";
-import { reviewNewBundle } from "./commands/review-bundle";
 import { StatusBarController } from "./status-bar";
 
-const REVIEWED_KEY = "orca.reviewedBundleIds";
+function setLoggedIn(value: boolean): void {
+  vscode.commands.executeCommand("setContext", "or.loggedIn", value);
+}
 
-async function loadAllBundles(
+async function loadAllWorkspaces(
   tree: BundleTreeProvider,
   statusBar: StatusBarController,
-  extContext: vscode.ExtensionContext,
 ): Promise<void> {
+  if (!(await auth.isLoggedIn())) {
+    tree.clear();
+    statusBar.reset();
+    setLoggedIn(false);
+    return;
+  }
+
+  setLoggedIn(true);
+
   try {
-    const { bundles } = await api.listBundles();
+    const { workspaces } = await api.listWorkspaces();
 
-    const reviewedIds = extContext.workspaceState.get<string[]>(REVIEWED_KEY) ?? [];
-    const reviewedSet = new Set(reviewedIds);
-    const hasNew = bundles.some((b) => !reviewedSet.has(b.id));
+    const wsEntries: WorkspaceEntry[] = await Promise.all(
+      workspaces.map(async (workspace) => {
+        try {
+          const { bundles } = await api.listBundles(workspace.id);
 
-    const entries: BundleEntry[] = await Promise.all(
-      bundles.map(async (bundle) => ({
-        bundle,
-        context: await api.getContext(bundle.ticket_ref).catch(() => null),
-      })),
+          const entries: BundleEntry[] = bundles.map((bundle) => ({
+            bundle,
+            context: null,
+          }));
+
+          return { workspace, bundles: entries };
+        } catch {
+          return { workspace, bundles: [] };
+        }
+      }),
     );
 
-    if (hasNew) {
-      const updatedEntries: BundleEntry[] = [];
+    tree.setWorkspaces(wsEntries);
 
-      for (const entry of entries) {
-        if (!reviewedSet.has(entry.bundle.id)) {
-          const { bundle: adjusted, included } = await reviewNewBundle(entry.bundle);
-          reviewedSet.add(entry.bundle.id);
-          if (included) {
-            updatedEntries.push({ bundle: adjusted, context: entry.context });
-          }
-        } else {
-          updatedEntries.push(entry);
-        }
-      }
-
-      await extContext.workspaceState.update(REVIEWED_KEY, [...reviewedSet]);
-      tree.setBundles(updatedEntries);
-      statusBar.setBundleCount(updatedEntries.length);
-    } else {
-      tree.setBundles(entries);
-      statusBar.setBundleCount(entries.length);
+    const totalBundles = wsEntries.reduce(
+      (sum, ws) => sum + ws.bundles.length,
+      0,
+    );
+    statusBar.setBundleCount(totalBundles);
+  } catch (err) {
+    if (
+      err instanceof Error &&
+      (err.message.includes("401") || err.message.includes("Invalid token"))
+    ) {
+      await auth.logout();
+      setLoggedIn(false);
+      tree.clear();
+      statusBar.reset();
+      vscode.window.showWarningMessage(
+        "OR: session expired. Please sign in again.",
+      );
     }
-  } catch {
-    // API not available — leave tree empty
   }
 }
 
 export function activate(context: vscode.ExtensionContext) {
+  auth.init(context);
+
   const tree = new BundleTreeProvider();
   const statusBar = new StatusBarController();
 
   context.subscriptions.push(
-    vscode.window.registerTreeDataProvider("orca.bundleTree", tree),
+    vscode.window.registerTreeDataProvider("or.bundleTree", tree),
     statusBar,
   );
 
-  const reload = () => loadAllBundles(tree, statusBar, context);
+  const reload = () => loadAllWorkspaces(tree, statusBar);
 
   context.subscriptions.push(
+    vscode.commands.registerCommand("or.login", async () => {
+      try {
+        const result = await auth.login();
+        if (result) {
+          vscode.window.showInformationMessage(
+            `Signed in as ${result.user.email}`,
+          );
+          await reload();
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Unknown error";
+        vscode.window.showErrorMessage(`OR login failed: ${msg}`);
+      }
+    }),
+
+    vscode.commands.registerCommand("or.logout", async () => {
+      await auth.logout();
+      tree.clear();
+      statusBar.reset();
+      setLoggedIn(false);
+      vscode.window.showInformationMessage("OR: signed out.");
+    }),
+
     vscode.commands.registerCommand(
-      "orca.fetchBundle",
+      "or.fetchBundle",
       createFetchBundleCommand(reload),
     ),
-    vscode.commands.registerCommand("orca.refreshBundle", reload),
+    vscode.commands.registerCommand("or.refreshBundle", reload),
     vscode.commands.registerCommand(
-      "orca.submitEvidence",
+      "or.submitEvidence",
       createSubmitEvidenceCommand(tree),
     ),
     vscode.commands.registerCommand(
-      "orca.executeTask",
+      "or.executeTask",
       createExecuteTaskCommand(tree),
     ),
     vscode.commands.registerCommand(
-      "orca.executeBundle",
+      "or.executeBundle",
       createExecuteBundleCommand(tree),
     ),
-    vscode.commands.registerCommand("orca.disconnect", () => {
+    vscode.commands.registerCommand("or.disconnect", async () => {
+      await auth.logout();
       tree.clear();
       statusBar.reset();
+      setLoggedIn(false);
       vscode.window.showInformationMessage("OR: disconnected.");
     }),
   );
